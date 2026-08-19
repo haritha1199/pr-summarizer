@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const axios = require('axios');
+const crypto = require('crypto');
 const { GoogleGenAI } = require('@google/genai');
 const mongoose = require('mongoose');
 const cors = require('cors');
@@ -12,10 +13,15 @@ mongoose.connect(process.env.MONGODB_URI)
   })
   .catch(err => console.log('mongodb connection failed: ', err));
 
+const githubParser = express.json({
+  verify: (req, res, buf) =>{
+    req.rawBody = buf.toString('utf8');
+  }
+});
 
 const app = express();
-app.use(express.json());
 app.use(cors());
+app.use(githubParser);
 
 const myToken = process.env.GITHUB_TOKEN;
 app.get('/health', (req, res) => {
@@ -24,7 +30,26 @@ app.get('/health', (req, res) => {
 
 const ai = new GoogleGenAI({});
 
-app.post('/webhook', async (req, res) => {
+app.post('/webhook' ,async (req, res) => {
+
+  const githubSignature = req.headers['x-hub-signature-256'];
+
+  if(!githubSignature){
+    return res.status(401).send('missing signature');
+  }
+
+  const expectedSignature = 'sha256=' + crypto.createHmac('sha256', process.env.GITHUB_WEBHOOK_SECRET)
+  .update(req.rawBody||'')
+  .digest('hex');
+
+  const trustedBuffer = Buffer.from(expectedSignature, 'ascii');
+  const receivedBuffer = Buffer.from(githubSignature, 'ascii');
+
+  if (trustedBuffer.length !== receivedBuffer.length || 
+      !crypto.timingSafeEqual(trustedBuffer, receivedBuffer)) {
+    return res.status(403).send('Invalid signature');
+  }
+
   if (!req.body.pull_request || req.body.action !== 'opened') {
     console.log('ignoring non pr event');
     return res.send();
