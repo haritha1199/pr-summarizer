@@ -1,0 +1,99 @@
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600;700&family=Inter:wght@400;500;600&display=swap');
+
+:root {
+  --bg: #121214;
+  --surface: #1A1A1D;
+  --border: #2A2A2E;
+  --text: #F2F2F3;
+  --text-dim: #9A9AA0;
+  --accent: #5B8DEF;
+  --accent-bg: #5B8DEF1F;
+  --mono: 'JetBrains Mono', ui-monospace, monospace;
+  --sans: 'Inter', system-ui, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+}
+
+.app-header {
+  text-align: center;
+  padding: 3rem 1.5rem 2rem;
+  font-family: var(--mono);
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+.app-header::after {
+  content: '_';
+  color: var(--accent);
+  animation: blink 1s step-end infinite;
+}
+
+@keyframes blink {
+  50% { opacity: 0; }
+}
+
+.summary-list {
+  list-style: none;
+  margin: 0 auto;
+  padding: 0 2rem 3rem;
+  max-width: 1400px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+  gap: 1.25rem;
+  text-align: left;
+}
+
+.summary-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1.25rem 1.5rem;
+  transition: border-color 0.15s ease;
+}
+
+.summary-card:hover {
+  border-color: #3A3A40;
+}
+
+.summary-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  margin-bottom: 0.6rem;
+}
+
+.pr-badge {
+  background: var(--accent-bg);
+  color: var(--accent);
+  padding: 0.1rem 0.5rem;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+.pr-title {
+  margin: 0 0 0.6rem;
+  font-size: 1.02rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.summary-body {
+  margin: 0;
+  color: var(--text-dim);
+  font-size: 0.9rem;
+  line-height: 1.65;
+  white-space: pre-line;
+}
