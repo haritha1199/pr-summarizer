@@ -5,7 +5,49 @@ const crypto = require('crypto');
 const { GoogleGenAI } = require('@google/genai');
 const mongoose = require('mongoose');
 const cors = require('cors');
-const Summary = require('../models/Summary')
+const Summary = require('../models/Summary');
+const fs = require('node:fs');
+const jwt = require('jsonwebtoken');
+
+let pemData;
+try
+{
+  pemData = fs.readFileSync('keys/pr-summarizer-hr.2026-08-19.private-key.pem', 'utf8');
+  console.log(pemData);
+}
+catch(err)
+{
+  console.log('error reading the file: ', err);
+}
+
+const appId = process.env.GITHUB_APP_ID;
+const nowInSeconds = Math.floor(Date.now()/1000);
+
+const payload = {
+  iat: nowInSeconds -60,
+  exp: nowInSeconds + (5*60),
+  iss: appId
+};
+console.log(`generated payload: `, payload);
+
+const signedPayload = jwt.sign(payload, pemData, {algorithm: 'RS256'});
+
+(async () => {
+  try{
+    const response = await axios.get('https://api.github.com/app', {
+      headers: {
+        'Authorization' : `Bearer ${signedPayload}`,
+        'Accept': 'application/vnd.github+json'
+      }
+    });
+    console.log('App info from github: ', response.data);
+  }
+  catch(err){
+    console.log('jwst testing failed: ', err);
+  }
+});
+
+
 
 mongoose.connect(process.env.MONGODB_URI)
   .then(async () => {
