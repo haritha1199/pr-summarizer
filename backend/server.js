@@ -10,40 +10,38 @@ const fs = require('node:fs');
 const jwt = require('jsonwebtoken');
 
 let pemData;
-try
-{
+try {
   pemData = fs.readFileSync('keys/pr-summarizer-hr.2026-08-19.private-key.pem', 'utf8');
   console.log(pemData);
 }
-catch(err)
-{
+catch (err) {
   console.log('error reading the file: ', err);
 }
 
 const appId = process.env.GITHUB_APP_ID;
-const nowInSeconds = Math.floor(Date.now()/1000);
 
-const payload = {
-  iat: nowInSeconds -60,
-  exp: nowInSeconds + (5*60),
-  iss: appId
-};
-console.log(`generated payload: `, payload);
-
-const signedPayload = jwt.sign(payload, pemData, {algorithm: 'RS256'});
 let installation_id;
-
 let token;
-async function getInstallationToken(){
-  try{
+async function getInstallationToken() {
+  try {
+    const nowInSeconds = Math.floor(Date.now() / 1000);
+
+    const payload = {
+      iat: nowInSeconds - 60,
+      exp: nowInSeconds + (5 * 60),
+      iss: appId
+    };
+    console.log(`generated payload: `, payload);
+
+    const signedPayload = jwt.sign(payload, pemData, { algorithm: 'RS256' });
     const response = await axios.get('https://api.github.com/app', {
       headers: {
-        'Authorization' : `Bearer ${signedPayload}`,
+        'Authorization': `Bearer ${signedPayload}`,
         'Accept': 'application/vnd.github+json'
       }
     });
     console.log('App info from github: ', response.data);
-    
+
     const result = await axios.get('https://api.github.com/app/installations', {
       headers: {
         'Authorization': `Bearer ${signedPayload}`,
@@ -51,22 +49,22 @@ async function getInstallationToken(){
       }
     });
     installation_id = result.data[0].id;
-    
+
     const newResponse = await axios.post(`https://api.github.com/app/installations/${installation_id}/access_tokens`, {}, {
       headers: {
         'Authorization': `Bearer ${signedPayload}`,
         'Accept': 'application/vnd.github+json'
       }
     });
+
     token = newResponse.data;
     console.log('Token: ', token);
+    return token.token;
   }
-  catch(err){
+  catch (err) {
     console.log(err);
   }
 }
-getInstallationToken();
-
 
 mongoose.connect(process.env.MONGODB_URI)
   .then(async () => {
@@ -75,7 +73,7 @@ mongoose.connect(process.env.MONGODB_URI)
   .catch(err => console.log('mongodb connection failed: ', err));
 
 const githubParser = express.json({
-  verify: (req, res, buf) =>{
+  verify: (req, res, buf) => {
     req.rawBody = buf.toString('utf8');
   }
 });
@@ -95,19 +93,19 @@ app.post('/webhook', async (req, res) => {
 
   const githubSignature = req.headers['x-hub-signature-256'];
 
-  if(!githubSignature){
+  if (!githubSignature) {
     return res.status(401).send('missing signature');
   }
 
   const expectedSignature = 'sha256=' + crypto.createHmac('sha256', process.env.GITHUB_WEBHOOK_SECRET)
-  .update(req.rawBody||'')
-  .digest('hex');
+    .update(req.rawBody || '')
+    .digest('hex');
 
   const trustedBuffer = Buffer.from(expectedSignature, 'ascii');
   const receivedBuffer = Buffer.from(githubSignature, 'ascii');
 
-  if (trustedBuffer.length !== receivedBuffer.length || 
-      !crypto.timingSafeEqual(trustedBuffer, receivedBuffer)) {
+  if (trustedBuffer.length !== receivedBuffer.length ||
+    !crypto.timingSafeEqual(trustedBuffer, receivedBuffer)) {
     return res.status(403).send('Invalid signature');
   }
 
@@ -120,22 +118,23 @@ app.post('/webhook', async (req, res) => {
   const repoName = req.body.repository.name;
   const prTitle = req.body.pull_request.title;
 
+  const installationToken = await getInstallationToken();
+
   try {
     const response = await axios.get(`https://api.github.com/repos/${repoOwner}/${repoName}/pulls/${prNumber}`, {
       headers: {
         'Accept': 'application/vnd.github.v3.diff',
-        'Authorization': `token ${myToken}`
+        'Authorization': `Bearer ${installationToken}`
       }
     });
 
     let diffText = response.data;
 
-    const truncated = diffText.length>10000;
-    if(truncated)
+    const truncated = diffText.length > 10000;
+    if (truncated)
       diffText = diffText.slice(0, 9900);
-    
-    if(diffText.length<100)
-    {
+
+    if (diffText.length < 100) {
       console.log('diff too small, skipping');
       return res.send();
     }
@@ -144,7 +143,7 @@ app.post('/webhook', async (req, res) => {
     Rules:
     - Skip trivial changes (formatting, whitespace, typos) unless that's the entire PR.
     - Focus on the "what" and "why," not a line-by-line restatement of the diff.
-    - ${truncated ? '-Note: this diff was truncated due to size, so it may be incomplete. Mention in your summary that this PR is large and the summary may not cover every change.' :''}
+    - ${truncated ? '-Note: this diff was truncated due to size, so it may be incomplete. Mention in your summary that this PR is large and the summary may not cover every change.' : ''}
     Diff:
 
     ${diffText}`;
@@ -156,7 +155,7 @@ app.post('/webhook', async (req, res) => {
 
     await axios.post(`https://api.github.com/repos/${repoOwner}/${repoName}/issues/${prNumber}/comments`, { body: interaction.output_text }, {
       headers: {
-        'Authorization': `token ${myToken}`,
+        'Authorization': `Bearer ${installationToken}`,
         'Accept': 'application/vnd.github+json'
       }
     });
