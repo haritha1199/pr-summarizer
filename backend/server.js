@@ -31,8 +31,10 @@ const payload = {
 console.log(`generated payload: `, payload);
 
 const signedPayload = jwt.sign(payload, pemData, {algorithm: 'RS256'});
+let installation_id;
 
-(async () => {
+let token;
+async function getInstallationToken(){
   try{
     const response = await axios.get('https://api.github.com/app', {
       headers: {
@@ -41,12 +43,29 @@ const signedPayload = jwt.sign(payload, pemData, {algorithm: 'RS256'});
       }
     });
     console.log('App info from github: ', response.data);
+    
+    const result = await axios.get('https://api.github.com/app/installations', {
+      headers: {
+        'Authorization': `Bearer ${signedPayload}`,
+        'Accept': 'application/vnd.github+json'
+      }
+    });
+    installation_id = result.data[0].id;
+    
+    const newResponse = await axios.post(`https://api.github.com/app/installations/${installation_id}/access_tokens`, {}, {
+      headers: {
+        'Authorization': `Bearer ${signedPayload}`,
+        'Accept': 'application/vnd.github+json'
+      }
+    });
+    token = newResponse.data;
+    console.log('Token: ', token);
   }
   catch(err){
-    console.log('jwst testing failed: ', err);
+    console.log(err);
   }
-});
-
+}
+getInstallationToken();
 
 
 mongoose.connect(process.env.MONGODB_URI)
@@ -72,7 +91,7 @@ app.get('/health', (req, res) => {
 
 const ai = new GoogleGenAI({});
 
-app.post('/webhook' ,async (req, res) => {
+app.post('/webhook', async (req, res) => {
 
   const githubSignature = req.headers['x-hub-signature-256'];
 
