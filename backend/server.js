@@ -31,6 +31,10 @@ async function getInstallationToken() {
     };
     console.log(`generated payload: `, payload);
 
+    console.log('Key starts correctly:', pemData.startsWith('-----BEGIN RSA PRIVATE KEY-----'));
+    console.log('Key ends correctly:', pemData.trim().endsWith('-----END RSA PRIVATE KEY-----'));
+    console.log('Key length:', pemData.length);
+
     const signedPayload = jwt.sign(payload, pemData, { algorithm: 'RS256' });
     const response = await axios.get('https://api.github.com/app', {
       headers: {
