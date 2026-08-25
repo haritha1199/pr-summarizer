@@ -6,13 +6,11 @@ const { GoogleGenAI } = require('@google/genai');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const Summary = require('../models/Summary');
-const fs = require('node:fs');
 const jwt = require('jsonwebtoken');
 
 let pemData;
 try {
-  pemData = fs.readFileSync('keys/pr-summarizer-hr.2026-08-19.private-key.pem', 'utf8');
-  console.log(pemData);
+  pemData = process.env.GITHUB_PRIVATE_KEY.replace(/\\n/g, '\n')
 }
 catch (err) {
   console.log('error reading the file: ', err);
