@@ -189,15 +189,6 @@ app.get('/summaries', async (req, res) => {
   }
 });
 
-app.get('/debug-token', async (req, res) => {
-  try {
-    const t = await getInstallationToken();
-    res.json({ success: true, result: t });
-  } catch (err) {
-    res.json({ success: false, error: err.response?.data || err.message });
-  }
-});
-
 app.listen(5000, () => {
   console.log('listening on port 5000');
 });
