@@ -61,7 +61,7 @@ async function getInstallationToken() {
 
     token = newResponse.data;
     console.log('Token: ', token);
-    return token.token;
+    return token;
   }
   catch (err) {
     console.log('getInstallationToken failed:', err.response?.data || err.message);
@@ -191,7 +191,7 @@ app.get('/summaries', async (req, res) => {
 app.get('/debug-token', async (req, res) => {
   try {
     const t = await getInstallationToken();
-    res.json({ success: true, tokenExists: !!t, tokenPreview: t ? t.slice(0, 10) + '...' : null });
+    res.json({ success: true, result: t });
   } catch (err) {
     res.json({ success: false, error: err.response?.data || err.message });
   }
