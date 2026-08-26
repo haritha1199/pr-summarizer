@@ -61,7 +61,7 @@ async function getInstallationToken() {
 
     token = newResponse.data;
     console.log('Token: ', token);
-    return token;
+    return token.token;
   }
   catch (err) {
     console.log('getInstallationToken failed:', err.response?.data || err.message);
