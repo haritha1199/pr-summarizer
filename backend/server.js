@@ -189,29 +189,6 @@ app.get('/summaries', async (req, res) => {
   }
 });
 
-app.get('/debug-installations', async (req, res) => {
-  try {
-    const nowInSeconds = Math.floor(Date.now() / 1000);
-    const payload = { iat: nowInSeconds - 60, exp: nowInSeconds + (5 * 60), iss: appId };
-    const signedPayload = jwt.sign(payload, pemData, { algorithm: 'RS256' });
-
-    const result = await axios.get('https://api.github.com/app/installations', {
-      headers: {
-        'Authorization': `Bearer ${signedPayload}`,
-        'Accept': 'application/vnd.github+json'
-      }
-    });
-
-    res.json(result.data.map(inst => ({
-      id: inst.id,
-      account: inst.account.login,
-      repository_selection: inst.repository_selection
-    })));
-  } catch (err) {
-    res.json({ error: err.response?.data || err.message });
-  }
-});
-
 app.listen(5000, () => {
   console.log('listening on port 5000');
 });
