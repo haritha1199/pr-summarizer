@@ -152,7 +152,7 @@ app.post('/webhook', async (req, res) => {
     ${diffText}`;
 
     const interaction = await ai.interactions.create({
-      model: "gemini-3.5-flash",
+      model: "gemini-3.5-flash-lite",
       input: prompt
     });
 
