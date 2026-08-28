@@ -29,11 +29,6 @@ async function getInstallationToken() {
       exp: nowInSeconds + (5 * 60),
       iss: appId
     };
-    console.log(`generated payload: `, payload);
-
-    console.log('Key starts correctly:', pemData.startsWith('-----BEGIN RSA PRIVATE KEY-----'));
-    console.log('Key ends correctly:', pemData.trim().endsWith('-----END RSA PRIVATE KEY-----'));
-    console.log('Key length:', pemData.length);
 
     const signedPayload = jwt.sign(payload, pemData, { algorithm: 'RS256' });
     const response = await axios.get('https://api.github.com/app', {
@@ -171,7 +166,6 @@ app.post('/webhook', async (req, res) => {
     });
 
     await newSummary.save();
-    console.log('summary saved to db: ', newSummary);
   }
   catch (err) {
     console.log(err);

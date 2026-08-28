@@ -8,8 +8,7 @@ function App() {
 
   useEffect(() => {
     async function fetchData() {
-      const summary = await axios.get('http://localhost:5000/summaries');
-
+      const summary = await axios.get('https://pr-summarizer-ypqr.onrender.com/summaries');
       setSummaries(summary.data);
     }
     fetchData();
